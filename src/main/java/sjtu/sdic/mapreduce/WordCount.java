@@ -1,11 +1,13 @@
 package sjtu.sdic.mapreduce;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import sjtu.sdic.mapreduce.common.KeyValue;
 import sjtu.sdic.mapreduce.core.Master;
 import sjtu.sdic.mapreduce.core.Worker;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -18,11 +20,32 @@ public class WordCount {
 
     public static List<KeyValue> mapFunc(String file, String value) {
         // Your code here (Part II)
-       return null;
+        try {
+            Pattern p = Pattern.compile("[^a-zA-Z0-9]+");
+            String[] words = p.split(value);
+
+            List<KeyValue> lkv = new ArrayList<KeyValue>();
+            for (String word : words)
+                lkv.add(new KeyValue(word, "1"));
+
+            return lkv;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public static String reduceFunc(String key, String[] values) {
         // Your code here (Part II)
+        try {
+            int retNum = 0;
+            for (String value : values)
+                retNum += Integer.parseInt(value);
+            return Integer.toString(retNum);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
