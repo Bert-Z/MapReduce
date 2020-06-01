@@ -1,16 +1,15 @@
 package sjtu.sdic.mapreduce.core;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import org.apache.commons.io.FileUtils;
 import sjtu.sdic.mapreduce.common.KeyValue;
 import sjtu.sdic.mapreduce.common.Utils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,21 +72,20 @@ public class Mapper {
             String contents = FileUtils.readFileToString(new File(inFile),StandardCharsets.UTF_8.name());
             List<KeyValue> lkv = mapF.map(inFile, contents);
 
-            String[] intermedia_contests=new String[nReduce];
-            int len=lkv.size();
-            for(int i=0;i<len;i++){
-                KeyValue kv=lkv.get(i);
-                String tmp=kv.key+"::"+kv.value+"\n";
+            List<List<KeyValue>> llkv=new ArrayList<>();
+            for(int i=0;i<nReduce;i++)
+                llkv.add(new ArrayList<>());
+
+            for(KeyValue kv : lkv){
                 int r=hashCode(kv.key)%nReduce;
-                intermedia_contests[r]+=tmp;
+                llkv.get(r).add(kv);
             }
 
-            String[] reduce_name=new String[nReduce];
             for (int reduceTask = 0; reduceTask < nReduce; reduceTask++) {
-                reduce_name[reduceTask] = Utils.reduceName(jobName, mapTask, reduceTask);
-                File file=new File(reduce_name[reduceTask]);
-//                System.out.println(intermedia_contests[reduceTask]);
-                FileUtils.writeStringToFile(file,intermedia_contests[reduceTask],true);
+                File intermediate_file = new File(Utils.reduceName(jobName, mapTask, reduceTask));
+                FileWriter file_writer = new FileWriter(intermediate_file.getName());
+                file_writer.write(JSON.toJSONString(llkv.get(reduceTask)));
+                file_writer.close();
             }
 
         } catch (Exception e) {
