@@ -40,8 +40,10 @@ public class WordCount {
         // Your code here (Part II)
         try {
             int retNum = 0;
-            for (String value : values)
+            for (String value : values){
                 retNum += Integer.parseInt(value);
+            }
+
             return Integer.toString(retNum);
         } catch (Exception e) {
             e.printStackTrace();

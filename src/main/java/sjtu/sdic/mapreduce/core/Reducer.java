@@ -76,6 +76,9 @@ public class Reducer {
                     return o1.key.compareTo(o2.key);
                 }
             });
+//            for (KeyValue kv:allInOne) {
+//                System.out.println("key:"+kv.key+"-value:"+kv.value);
+//            }
 
             // reduce
             List<KeyValue> reduce_result = new ArrayList<>();
@@ -83,23 +86,22 @@ public class Reducer {
 
             String last_key = allInOne.get(0).key;
             for (KeyValue kv : allInOne) {
-                if (kv.key == last_key) {
+                if (kv.key.equals(last_key)) {
                     values.add(kv.value);
                 } else {
                     String[] values_str = new String[values.size()];
-                    values_str = values.toArray(values_str);
-//                    System.out.println("key:"+last_key);
-//                    System.out.println("values:"+values_str);
-                    String result = reduceF.reduce(last_key, new String[0]);
+                    values_str = values.toArray(new String[0]);
+                    String result = reduceF.reduce(last_key, values_str);
                     reduce_result.add(new KeyValue(last_key, result));
-
+//                    System.out.println(values.size());
                     last_key = kv.key;
                     values.clear();
                     values.add(kv.value);
                 }
             }
             String[] values_str = new String[values.size()];
-            String result = reduceF.reduce(last_key, values.toArray(new String[0]));
+            values_str = values.toArray(new String[0]);
+            String result = reduceF.reduce(last_key, values_str);
             reduce_result.add(new KeyValue(last_key, result));
 //            System.out.println("key:"+last_key);
 //            System.out.println("values:"+values_str);
