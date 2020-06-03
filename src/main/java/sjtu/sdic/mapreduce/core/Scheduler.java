@@ -25,10 +25,10 @@ public class Scheduler {
      * suitable for passing to {@link Call}. registerChan will yield all
      * existing registered workers (if any) and new ones as they register.
      *
-     * @param jobName job name
-     * @param mapFiles files' name (if in same dir, it's also the files' path)
-     * @param nReduce the number of reduce task that will be run ("R" in the paper)
-     * @param phase MAP or REDUCE
+     * @param jobName      job name
+     * @param mapFiles     files' name (if in same dir, it's also the files' path)
+     * @param nReduce      the number of reduce task that will be run ("R" in the paper)
+     * @param phase        MAP or REDUCE
      * @param registerChan register info channel
      */
     public static void schedule(String jobName, String[] mapFiles, int nReduce, JobPhase phase, Channel<String> registerChan) {
@@ -48,12 +48,39 @@ public class Scheduler {
         System.out.println(String.format("Schedule: %d %s tasks (%d I/Os)", nTasks, phase, nOther));
 
         /**
-        // All ntasks tasks have to be scheduled on workers. Once all tasks
-        // have completed successfully, schedule() should return.
-        //
-        // Your code here (Part III, Part IV).
-        //
-        */
+         // All ntasks tasks have to be scheduled on workers. Once all tasks
+         // have completed successfully, schedule() should return.
+         //
+         // Your code here (Part III, Part IV).
+         //
+         */
+
+        final CountDownLatch latch = new CountDownLatch(nTasks);
+
+        for (int task_i = 0; task_i < nTasks; task_i++) {
+            final int i = task_i;
+            final int n_other = nOther;
+            new Thread(() -> {
+                try {
+                    String addr = registerChan.read();
+                    DoTaskArgs args = new DoTaskArgs(jobName, mapFiles[i], phase, i, n_other);
+                    Call.getWorkerRpcService(addr).doTask(args);
+                    registerChan.write(addr);
+                    latch.countDown();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Utils.debug("No worker available.");
+                }
+            }).start();
+        }
+
+        try {
+            latch.await();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         System.out.println(String.format("Schedule: %s done", phase));
     }
