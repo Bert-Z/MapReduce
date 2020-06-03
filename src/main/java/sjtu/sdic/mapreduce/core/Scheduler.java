@@ -1,5 +1,6 @@
 package sjtu.sdic.mapreduce.core;
 
+import com.alipay.sofa.rpc.core.exception.SofaRpcException;
 import sjtu.sdic.mapreduce.common.Channel;
 import sjtu.sdic.mapreduce.common.DoTaskArgs;
 import sjtu.sdic.mapreduce.common.JobPhase;
@@ -62,17 +63,25 @@ public class Scheduler {
             final int n_other = nOther;
             new Thread(() -> {
                 try {
-                    String addr = registerChan.read();
-                    DoTaskArgs args = new DoTaskArgs(jobName, mapFiles[i], phase, i, n_other);
-                    Call.getWorkerRpcService(addr).doTask(args);
-                    registerChan.write(addr);
+                    String address = registerChan.read();
+                    while (true) {
+                        try {
+                            DoTaskArgs arg = new DoTaskArgs(jobName, mapFiles[i], phase, i, n_other);
+                            Call.getWorkerRpcService(address).doTask(arg);
+                            break;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            registerChan.write(address);
+                            address = registerChan.read();
+                        }
+                    }
+
+                    registerChan.write(address);
                     latch.countDown();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 } catch (Exception e) {
                     e.printStackTrace();
-                    Utils.debug("No worker available.");
                 }
+
             }).start();
         }
 
